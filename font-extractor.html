@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Font Extractor from JS Bootstrap</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f0f12;
+      color: #e2e2e8;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a2e;
+      border-bottom: 1px solid #2a2a45;
+      padding: 18px 32px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    header svg { flex-shrink: 0; }
+    header h1 { font-size: 1.25rem; font-weight: 600; color: #fff; }
+    header span { font-size: 0.8rem; color: #8888aa; margin-left: 4px; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+
+    .card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a45;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #b0b0d0; }
+
+    textarea {
+      width: 100%;
+      height: 180px;
+      background: #0f0f1e;
+      border: 1px solid #2a2a45;
+      border-radius: 8px;
+      color: #ccd;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea:focus { border-color: #6c6cff; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    button {
+      padding: 9px 22px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+    .btn-primary { background: #5c5cff; color: #fff; }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary { background: #2a2a45; color: #aaa; }
+    .btn-secondary:hover { background: #333358; }
+    .btn-debug { background: #2a3a2a; color: #88aa88; font-size: 0.8rem; padding: 9px 16px; }
+    .btn-debug:hover { background: #2a4a2a; }
+
+    #status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      min-height: 1.2em;
+      color: #7adfaa;
+    }
+    #status.error { color: #ff7070; }
+
+    /* Debug panel */
+    #debugPanel {
+      display: none;
+      margin-top: 14px;
+      background: #0a0a18;
+      border: 1px solid #2a3a2a;
+      border-radius: 8px;
+      padding: 14px;
+    }
+    #debugPanel h3 { font-size: 0.82rem; color: #88aa88; margin-bottom: 8px; }
+    #debugOutput {
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: #88bb88;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    /* Filter / Search bar */
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .filter-bar input {
+      flex: 1;
+      min-width: 160px;
+      background: #0f0f1e;
+      border: 1px solid #2a2a45;
+      border-radius: 8px;
+      color: #ccd;
+      font-size: 0.9rem;
+      padding: 8px 12px;
+      outline: none;
+    }
+    .filter-bar input:focus { border-color: #6c6cff; }
+    .filter-bar label { font-size: 0.85rem; color: #888; }
+    .filter-bar select {
+      background: #0f0f1e;
+      border: 1px solid #2a2a45;
+      border-radius: 8px;
+      color: #ccd;
+      font-size: 0.85rem;
+      padding: 8px 10px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #summary { font-size: 0.85rem; color: #888; margin-bottom: 8px; }
+
+    /* Font cards */
+    .font-list { display: grid; gap: 14px; }
+
+    .font-card {
+      background: #1a1a2e;
+      border: 1px solid #2a2a45;
+      border-radius: 10px;
+      padding: 16px 20px;
+      transition: border-color 0.2s;
+    }
+    .font-card:hover { border-color: #5c5cff55; }
+
+    .font-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .font-name { font-size: 1rem; font-weight: 700; color: #fff; }
+    .font-id { font-size: 0.72rem; color: #556; font-family: monospace; margin-top: 2px; }
+    .font-badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: #2a2a50;
+      color: #9090cc;
+      white-space: nowrap;
+    }
+    .chevron {
+      color: #556;
+      font-size: 1rem;
+      transition: transform 0.2s;
+    }
+    .font-card.open .chevron { transform: rotate(180deg); }
+
+    .style-list {
+      display: none;
+      margin-top: 14px;
+      border-top: 1px solid #22223a;
+      padding-top: 14px;
+      gap: 8px;
+      flex-direction: column;
+    }
+    .font-card.open .style-list { display: flex; }
+
+    .style-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .style-name {
+      font-size: 0.8rem;
+      color: #9090bb;
+      min-width: 140px;
+      text-transform: capitalize;
+    }
+    .file-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .dl-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity 0.15s;
+      cursor: pointer;
+    }
+    .dl-link:hover { opacity: 0.8; }
+    .dl-link.ttf  { background: #3b3b6d; color: #aaaaff; }
+    .dl-link.otf  { background: #3b3b6d; color: #aaaaff; }
+    .dl-link.woff  { background: #2a4a3a; color: #88ddaa; }
+    .dl-link.woff2 { background: #2a4a3a; color: #88ddaa; }
+    .dl-link.private { background: #4a2a2a; color: #dd8888; }
+    .dl-link.copy-btn {
+      background: #2a2a45;
+      color: #8888cc;
+      border: 1px solid #3a3a60;
+    }
+
+    .size-info { font-size: 0.7rem; color: #446; margin-left: 2px; }
+
+    #results { display: none; }
+    #no-results { display: none; text-align: center; padding: 40px; color: #556; }
+
+    .copied-toast {
+      position: fixed;
+      bottom: 30px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #5c5cff;
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 999;
+    }
+    .copied-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6c6cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+  </svg>
+  <h1>Font Extractor <span>— from JS bootstrap data</span></h1>
+</header>
+
+<div class="container">
+  <div class="card">
+    <h2>Paste JavaScript / Bootstrap Data</h2>
+    <textarea id="jsInput" placeholder="Paste the full JavaScript bootstrap code here (e.g. window['bootstrap'] = ...) or raw JSON..."></textarea>
+    <div class="btn-row">
+      <button class="btn-primary" onclick="extractFonts()">Extract Fonts</button>
+      <button class="btn-secondary" onclick="clearAll()">Clear</button>
+      <button class="btn-debug" onclick="toggleDebug()">Debug Info</button>
+    </div>
+    <div id="status"></div>
+    <div id="debugPanel">
+      <h3>Raw structure of first font entry (helps diagnose key names)</h3>
+      <pre id="debugOutput"></pre>
+    </div>
+  </div>
+
+  <div id="results">
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search font name…" oninput="filterFonts()" />
+      <label>Format:
+        <select id="formatFilter" onchange="filterFonts()">
+          <option value="">All</option>
+          <option value="OTF">OTF / TTF</option>
+          <option value="WOFF2">WOFF2</option>
+          <option value="WOFF">WOFF</option>
+        </select>
+      </label>
+      <label>Style:
+        <select id="styleFilter" onchange="filterFonts()">
+          <option value="">All styles</option>
+        </select>
+      </label>
+    </div>
+    <div id="summary"></div>
+    <div id="no-results">No fonts match your filter.</div>
+    <div class="font-list" id="fontList"></div>
+  </div>
+</div>
+
+<div class="copied-toast" id="toast">Copied!</div>
+
+<script>
+  let allFonts = [];
+  let rawFontEntries = [];
+
+  function setStatus(msg, isError = false) {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = isError ? 'error' : '';
+  }
+
+  function clearAll() {
+    document.getElementById('jsInput').value = '';
+    document.getElementById('results').style.display = 'none';
+    document.getElementById('fontList').innerHTML = '';
+    document.getElementById('debugPanel').style.display = 'none';
+    setStatus('');
+    allFonts = [];
+    rawFontEntries = [];
+  }
+
+  function toggleDebug() {
+    const panel = document.getElementById('debugPanel');
+    if (panel.style.display === 'block') {
+      panel.style.display = 'none';
+      return;
+    }
+    if (!rawFontEntries.length) {
+      setStatus('Extract fonts first to see debug info.', true);
+      return;
+    }
+    const out = document.getElementById('debugOutput');
+    const sample = rawFontEntries[0];
+    let text = '=== FIRST RAW FONT ENTRY (top-level keys) ===\n';
+    text += JSON.stringify(sample, null, 2).slice(0, 3000);
+    if (rawFontEntries.length > 1) {
+      text += '\n\n=== SECOND RAW FONT ENTRY ===\n';
+      text += JSON.stringify(rawFontEntries[1], null, 2).slice(0, 2000);
+    }
+    out.textContent = text;
+    panel.style.display = 'block';
+  }
+
+  /* ---- Safely get a string from an object field ---- */
+  function getString(obj, ...keys) {
+    for (const k of keys) {
+      const v = obj[k];
+      if (typeof v === 'string' && v.length > 0) return v;
+    }
+    return null;
+  }
+
+  /* ---- Check if something looks like a font file object ---- */
+  function isFileObj(f) {
+    if (!f || typeof f !== 'object' || Array.isArray(f)) return false;
+    // Must have a URL-like string somewhere
+    const url = getString(f, 'url', 'A', 'u', 'href', 'src');
+    return url && (url.startsWith('http') || url.startsWith('//'));
+  }
+
+  /* ---- Normalize a single file object ---- */
+  function normalizeFile(f) {
+    const url     = getString(f, 'url', 'A', 'u', 'href', 'src') || '';
+    const format  = getString(f, 'format', 'B', 'f', 'type', 'fileFormat') || guessFormat(url);
+    const rawSize = f.sizeBytes ?? f.C ?? f.size ?? f.s ?? f.bytes ?? 0;
+    const sizeBytes = typeof rawSize === 'number' ? rawSize : 0;
+    return { url, format: format.toUpperCase(), sizeBytes };
+  }
+
+  function guessFormat(url) {
+    if (!url) return 'OTF';
+    const lower = url.toLowerCase().split('?')[0];
+    if (lower.endsWith('.woff2')) return 'WOFF2';
+    if (lower.endsWith('.woff'))  return 'WOFF';
+    if (lower.endsWith('.ttf'))   return 'TTF';
+    if (lower.endsWith('.otf'))   return 'OTF';
+    return 'OTF';
+  }
+
+  /* ---- Collect all file objects from a style entry ---- */
+  function collectFiles(s) {
+    const files = [];
+    // Try all array-valued properties that might hold file objects
+    const arrKeys = ['files', 'subsettedFiles', 'B', 'C', 'D', 'fontFiles', 'downloads', 'variants'];
+    for (const key of arrKeys) {
+      const val = s[key];
+      if (Array.isArray(val)) {
+        for (const f of val) {
+          if (isFileObj(f)) files.push(normalizeFile(f));
+        }
+      }
+    }
+    // If no arrays found, maybe the style entry itself is a file (rare)
+    if (files.length === 0 && isFileObj(s)) {
+      files.push(normalizeFile(s));
+    }
+    return files;
+  }
+
+  /* ---- Check if an object looks like a font entry ---- */
+  function isFontEntry(obj) {
+    if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
+
+    // Must have a string name
+    const name = getString(obj, 'C', 'name', 'B', 'fontName', 'familyName', 'family');
+    if (!name || name.length > 300) return false;
+
+    // Must have a non-empty array for styles
+    const stylesArr = obj.D || obj.styles;
+    if (!Array.isArray(stylesArr) || stylesArr.length === 0) return false;
+
+    // At least the first element of styles must be an object
+    if (!stylesArr[0] || typeof stylesArr[0] !== 'object') return false;
+
+    return true;
+  }
+
+  /* ---- Normalize a font entry into a standard shape ---- */
+  function normalizeFontEntry(raw) {
+    // Name: try common string keys
+    const name = getString(raw, 'C', 'name', 'B', 'fontName', 'familyName', 'family') || '(Unknown)';
+    const id   = getString(raw, 'A', 'id', 'fontId', 'familyId') || '';
+
+    const rawStyles = raw.D || raw.styles || [];
+
+    const styles = rawStyles.map(s => {
+      if (!s || typeof s !== 'object') return null;
+
+      // Style name: try common string keys
+      const styleName = getString(s, 'style', 'name', 'A', 'B', 'type', 'weight', 'variant') || 'Regular';
+
+      // Collect file objects
+      const rawFiles = collectFiles(s);
+
+      // Deduplicate by url+format
+      const seen = new Set();
+      const deduped = [];
+      for (const f of rawFiles) {
+        if (!f.url) continue;
+        const key = f.url + '|' + f.format;
+        if (!seen.has(key)) { seen.add(key); deduped.push(f); }
+      }
+
+      return { styleName, files: deduped };
+    }).filter(Boolean);
+
+    return { id, name, styles };
+  }
+
+  /* ---- Deep scan for font-like entries ---- */
+  function deepScan(node, out, depth) {
+    if (depth > 8 || !node || typeof node !== 'object') return;
+    if (Array.isArray(node)) {
+      for (const item of node) {
+        if (isFontEntry(item)) { out.push(item); }
+        else { deepScan(item, out, depth + 1); }
+      }
+    } else {
+      for (const key of Object.keys(node)) {
+        const val = node[key];
+        if (isFontEntry(val)) { out.push(val); }
+        else if (typeof val === 'object') { deepScan(val, out, depth + 1); }
+      }
+    }
+  }
+
+  /* ---- Collect font arrays from parsed object ---- */
+  function collectFontArrays(obj) {
+    const fonts = [];
+    if (!obj || typeof obj !== 'object') return fonts;
+
+    const candidates = [];
+
+    // Try common paths in Canva bootstrap
+    const paths = [
+      obj?.page?.C,
+      obj?.page?.G,
+      obj?.page?.CX,
+      obj?.page?.r ? [obj.page.r] : null,
+      obj?.page?.CY ? [obj.page.CY] : null,
+    ];
+    for (const p of paths) {
+      if (Array.isArray(p)) candidates.push(...p);
+    }
+
+    // Fallback: if obj itself is an array of font-like objects
+    if (candidates.length === 0 && Array.isArray(obj)) {
+      candidates.push(...obj);
+    }
+
+    // Also do a deep scan for anything shaped like a font entry
+    if (candidates.length === 0) {
+      deepScan(obj, candidates, 0);
+    }
+
+    // Deduplicate by font ID or stringified name
+    const seen = new Set();
+    for (const f of candidates) {
+      if (isFontEntry(f)) {
+        const id = getString(f, 'A', 'id', 'fontId') || getString(f, 'C', 'name') || JSON.stringify(f).slice(0, 40);
+        if (!seen.has(id)) {
+          seen.add(id);
+          fonts.push(f);
+        }
+      }
+    }
+    return fonts;
+  }
+
+  /* ---- Parse the pasted code ---- */
+  function parseInput(raw) {
+    raw = raw.trim();
+
+    // Try pure JSON first
+    try { return JSON.parse(raw); } catch (_) {}
+
+    // Try extracting JSON from window['bootstrap'] = JSON.parse('...')
+    // Handle both single and escaped quotes
+    const m1 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*JSON\.parse\((['"`])([\s\S]+?)\1\)/);
+    if (m1) {
+      const inner = m1[2].replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      try { return JSON.parse(inner); } catch (_) {}
+      try { return JSON.parse(m1[2]); } catch (_) {}
+    }
+
+    // Try window['bootstrap'] = {...}
+    const m2 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*(\{[\s\S]+?\})(?:;|$)/);
+    if (m2) {
+      try { return (0, eval)('(' + m2[1] + ')'); } catch (_) {}
+    }
+
+    // Try extracting any large JSON.parse() call
+    const m3 = raw.match(/=\s*JSON\.parse\('([\s\S]{200,})'\)/);
+    if (m3) {
+      try { return JSON.parse(m3[1]); } catch (_) {}
+    }
+
+    // Try eval the whole script in a sandboxed way
+    try {
+      const sandbox = {};
+      const fn = new Function('window', raw + '\n return window;');
+      const result = fn(sandbox);
+      return result.bootstrap || result;
+    } catch (_) {}
+
+    return null;
+  }
+
+  /* ---- Render ---- */
+  const FORMAT_PRIORITY = ['OTF', 'TTF', 'WOFF2', 'WOFF', 'OTF_CFF'];
+
+  function formatLabel(fmt) {
+    if (!fmt) return 'DL';
+    if (fmt === 'OTF' || fmt === 'OTF_CFF' || fmt === 'TTF') return fmt;
+    return fmt;
+  }
+
+  function isPrivateUrl(url) {
+    return url && (url.includes('csig=') || url.includes('signer=') || url.includes('token='));
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes > 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
+    return Math.round(bytes / 1024) + ' KB';
+  }
+
+  function buildStyleRows(styles, fmtFilter, styleFilter) {
+    let rows = '';
+    for (const s of styles) {
+      // Style filter match (flexible)
+      if (styleFilter) {
+        const sn = s.styleName.toUpperCase().replace(/[\s_-]/g, '');
+        const sf = styleFilter.toUpperCase().replace(/[\s_-]/g, '');
+        if (sn !== sf) continue;
+      }
+
+      if (!s.files || s.files.length === 0) continue;
+
+      // Group files by format
+      const byFmt = {};
+      for (const f of s.files) {
+        const key = f.format || 'UNKNOWN';
+        if (!byFmt[key]) byFmt[key] = [];
+        byFmt[key].push(f);
+      }
+
+      let links = '';
+      const allFmts = [...new Set([...FORMAT_PRIORITY, ...Object.keys(byFmt)])];
+      for (const fmt of allFmts) {
+        if (!byFmt[fmt]) continue;
+        // Format filter
+        if (fmtFilter) {
+          if (fmtFilter === 'OTF' && !['OTF', 'TTF', 'OTF_CFF'].includes(fmt)) continue;
+          if (fmtFilter !== 'OTF' && fmt !== fmtFilter) continue;
+        }
+
+        const f = byFmt[fmt][0];
+        const priv = isPrivateUrl(f.url);
+        const cls = priv ? 'private' : (['WOFF2'].includes(fmt) ? 'woff2' : fmt === 'WOFF' ? 'woff' : 'ttf');
+        const label = formatLabel(fmt);
+        const sizeStr = fmtSize(f.sizeBytes);
+
+        if (priv) {
+          links += `<span class="dl-link ${cls}" title="Signed/private URL — may expire">${label} 🔒</span>`;
+          links += `<span class="dl-link copy-btn" onclick="copyUrl(this)" data-url="${escAttr(f.url)}" title="Copy URL">Copy URL</span>`;
+        } else {
+          links += `<a class="dl-link ${cls}" href="${escAttr(f.url)}" download target="_blank" rel="noopener">${label}${sizeStr ? `<span class="size-info">${sizeStr}</span>` : ''}</a>`;
+        }
+        delete byFmt[fmt];
+      }
+
+      if (!links) continue;
+
+      const displayStyle = String(s.styleName).replace(/[_-]/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      rows += `<div class="style-row">
+        <span class="style-name">${escHtml(displayStyle)}</span>
+        <div class="file-links">${links}</div>
+      </div>`;
+    }
+    return rows;
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function escAttr(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function renderFonts(fonts, fmtFilter, styleFilter, searchQuery) {
+    const list = document.getElementById('fontList');
+    const noResults = document.getElementById('no-results');
+    const summary = document.getElementById('summary');
+    list.innerHTML = '';
+    let shown = 0;
+
+    for (const font of fonts) {
+      if (searchQuery && !font.name.toLowerCase().includes(searchQuery.toLowerCase())) continue;
+
+      const rows = buildStyleRows(font.styles, fmtFilter, styleFilter);
+      if (!rows) continue;
+
+      shown++;
+      const styleCount = font.styles.length;
+      const card = document.createElement('div');
+      card.className = 'font-card';
+      card.innerHTML = `
+        <div class="font-header" onclick="toggleCard(this)">
+          <div>
+            <div class="font-name">${escHtml(font.name)}</div>
+            <div class="font-id">${escHtml(font.id)}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="font-badge">${styleCount} style${styleCount !== 1 ? 's' : ''}</span>
+            <span class="chevron">&#9662;</span>
+          </div>
+        </div>
+        <div class="style-list">${rows}</div>`;
+      list.appendChild(card);
+    }
+
+    noResults.style.display = shown === 0 ? 'block' : 'none';
+    summary.textContent = `Showing ${shown} of ${fonts.length} font${fonts.length !== 1 ? 's' : ''}`;
+  }
+
+  function toggleCard(header) {
+    header.closest('.font-card').classList.toggle('open');
+  }
+
+  function filterFonts() {
+    const search = document.getElementById('searchInput').value;
+    const fmt    = document.getElementById('formatFilter').value;
+    const style  = document.getElementById('styleFilter').value;
+    renderFonts(allFonts, fmt, style, search);
+  }
+
+  function populateStyleFilter(fonts) {
+    const styles = new Set();
+    for (const f of fonts) {
+      for (const s of f.styles) styles.add(s.styleName);
+    }
+    const sel = document.getElementById('styleFilter');
+    sel.innerHTML = '<option value="">All styles</option>';
+    for (const s of [...styles].sort()) {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = String(s).replace(/[_-]/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+      sel.appendChild(opt);
+    }
+  }
+
+  /* ---- Main entry ---- */
+  function extractFonts() {
+    const raw = document.getElementById('jsInput').value;
+    if (!raw.trim()) { setStatus('Please paste some JavaScript or JSON first.', true); return; }
+
+    setStatus('Parsing…');
+
+    let parsed;
+    try {
+      parsed = parseInput(raw);
+    } catch (e) {
+      setStatus('Parse error: ' + e.message, true);
+      return;
+    }
+
+    if (!parsed) { setStatus('Could not parse the input. Make sure you pasted the full script.', true); return; }
+
+    rawFontEntries = collectFontArrays(parsed);
+    if (!rawFontEntries.length) { setStatus('No font data found in the parsed object. Try the Debug Info button to inspect structure.', true); return; }
+
+    allFonts = rawFontEntries.map(normalizeFontEntry).filter(f => f.styles.length > 0);
+
+    const fontsWithFiles = allFonts.filter(f => f.styles.some(s => s.files.length > 0));
+
+    if (!fontsWithFiles.length) {
+      const totalStyles = allFonts.reduce((n, f) => n + f.styles.length, 0);
+      setStatus(`Found ${allFonts.length} font entries and ${totalStyles} styles, but no downloadable file URLs detected. Click Debug Info to inspect raw structure.`, true);
+    } else {
+      const totalStyles = fontsWithFiles.reduce((n, f) => n + f.styles.length, 0);
+      setStatus(`✓ Found ${fontsWithFiles.length} font${fontsWithFiles.length !== 1 ? 's' : ''} with ${totalStyles} total styles.`);
+    }
+
+    allFonts = fontsWithFiles.length > 0 ? fontsWithFiles : allFonts;
+
+    populateStyleFilter(allFonts);
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('formatFilter').value = '';
+    document.getElementById('styleFilter').value = '';
+    renderFonts(allFonts, '', '', '');
+  }
+
+  /* ---- Copy URL helper ---- */
+  function copyUrl(btn) {
+    const url = btn.getAttribute('data-url');
+    navigator.clipboard.writeText(url).then(() => {
+      const t = document.getElementById('toast');
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1800);
+    });
+  }
+</script>
+</body>
+</html>
