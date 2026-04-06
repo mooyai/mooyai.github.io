@@ -35,11 +35,67 @@
       padding: 24px;
       margin-bottom: 24px;
     }
-    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 12px; color: #b0b0d0; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; color: #b0b0d0; }
+    .card .sub { font-size: 0.8rem; color: #556; margin-bottom: 14px; }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 18px;
+      border-bottom: 1px solid #2a2a45;
+    }
+    .tab-btn {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: #666;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 20px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:active { transform: none; }
+    .tab-btn.active {
+      color: #aaaaff;
+      border-bottom-color: #6c6cff;
+    }
+    .tab-btn:hover:not(.active) { color: #8888bb; }
+
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* URL input */
+    .url-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .url-row input {
+      flex: 1;
+      background: #0f0f1e;
+      border: 1px solid #2a2a45;
+      border-radius: 8px;
+      color: #ccd;
+      font-size: 0.9rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .url-row input:focus { border-color: #6c6cff; }
+    .url-note {
+      font-size: 0.78rem;
+      color: #556;
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+    .url-note a { color: #6c6cff; text-decoration: none; }
 
     textarea {
       width: 100%;
-      height: 180px;
+      height: 160px;
       background: #0f0f1e;
       border: 1px solid #2a2a45;
       border-radius: 8px;
@@ -53,7 +109,7 @@
     }
     textarea:focus { border-color: #6c6cff; }
 
-    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+    .btn-row { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
     button {
       padding: 9px 22px;
       border-radius: 8px;
@@ -71,13 +127,28 @@
     .btn-debug { background: #2a3a2a; color: #88aa88; font-size: 0.8rem; padding: 9px 16px; }
     .btn-debug:hover { background: #2a4a2a; }
 
+    /* Spinner */
+    .spinner {
+      display: none;
+      width: 18px; height: 18px;
+      border: 2px solid #3a3a6a;
+      border-top-color: #6c6cff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+    .spinner.active { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     #status {
       margin-top: 10px;
       font-size: 0.85rem;
       min-height: 1.2em;
       color: #7adfaa;
+      line-height: 1.5;
     }
     #status.error { color: #ff7070; }
+    #status.warn  { color: #ffcc66; }
 
     /* Debug panel */
     #debugPanel {
@@ -99,7 +170,7 @@
       overflow-y: auto;
     }
 
-    /* Filter / Search bar */
+    /* Filter bar */
     .filter-bar {
       display: flex;
       gap: 10px;
@@ -207,8 +278,8 @@
       cursor: pointer;
     }
     .dl-link:hover { opacity: 0.8; }
-    .dl-link.ttf  { background: #3b3b6d; color: #aaaaff; }
-    .dl-link.otf  { background: #3b3b6d; color: #aaaaff; }
+    .dl-link.ttf   { background: #3b3b6d; color: #aaaaff; }
+    .dl-link.otf   { background: #3b3b6d; color: #aaaaff; }
     .dl-link.woff  { background: #2a4a3a; color: #88ddaa; }
     .dl-link.woff2 { background: #2a4a3a; color: #88ddaa; }
     .dl-link.private { background: #4a2a2a; color: #dd8888; }
@@ -247,21 +318,51 @@
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6c6cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
   </svg>
-  <h1>Font Extractor <span>— from JS bootstrap data</span></h1>
+  <h1>Font Extractor <span>— from Canva URL or JS bootstrap data</span></h1>
 </header>
 
 <div class="container">
   <div class="card">
-    <h2>Paste JavaScript / Bootstrap Data</h2>
-    <textarea id="jsInput" placeholder="Paste the full JavaScript bootstrap code here (e.g. window['bootstrap'] = ...) or raw JSON..."></textarea>
-    <div class="btn-row">
-      <button class="btn-primary" onclick="extractFonts()">Extract Fonts</button>
-      <button class="btn-secondary" onclick="clearAll()">Clear</button>
-      <button class="btn-debug" onclick="toggleDebug()">Debug Info</button>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('url')">🔗 From URL</button>
+      <button class="tab-btn" onclick="switchTab('paste')">📋 Paste JS / JSON</button>
     </div>
+
+    <!-- URL tab -->
+    <div id="tab-url" class="tab-pane active">
+      <div class="url-row">
+        <input type="url" id="urlInput" placeholder="https://www.canva.com/design/…" />
+        <button class="btn-primary" onclick="extractFromUrl()">Fetch &amp; Extract</button>
+        <div class="spinner" id="spinner"></div>
+      </div>
+      <p class="url-note">
+        Paste any Canva design URL. <strong>Public / view-only links work best</strong>
+        (e.g. <code>canva.com/design/…/view</code>).<br>
+        Edit links require you to be logged into Canva in your browser — if fetch fails,
+        open the page, copy the bootstrap JS from DevTools → Network → page response, then use the <em>Paste JS</em> tab.
+      </p>
+    </div>
+
+    <!-- Paste tab -->
+    <div id="tab-paste" class="tab-pane">
+      <textarea id="jsInput" placeholder="Paste the full JavaScript bootstrap code here (e.g. window['bootstrap'] = ...) or raw JSON..."></textarea>
+      <div class="btn-row">
+        <button class="btn-primary" onclick="extractFromPaste()">Extract Fonts</button>
+        <button class="btn-secondary" onclick="clearAll()">Clear</button>
+      </div>
+    </div>
+
+    <div class="btn-row" style="margin-top:14px;">
+      <button class="btn-debug" onclick="toggleDebug()">🔍 Debug Info</button>
+      <button class="btn-secondary" style="font-size:0.8rem;padding:9px 16px;" onclick="clearAll()">Reset All</button>
+    </div>
+
     <div id="status"></div>
+
     <div id="debugPanel">
-      <h3>Raw structure of first font entry (helps diagnose key names)</h3>
+      <h3>Raw structure of first font entry — shows the actual key names in your data</h3>
       <pre id="debugOutput"></pre>
     </div>
   </div>
@@ -295,14 +396,24 @@
   let allFonts = [];
   let rawFontEntries = [];
 
-  function setStatus(msg, isError = false) {
-    const el = document.getElementById('status');
-    el.textContent = msg;
-    el.className = isError ? 'error' : '';
+  /* ---- Tabs ---- */
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', ['url','paste'][i] === tab));
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
   }
 
+  /* ---- Status ---- */
+  function setStatus(msg, type = '') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = type; // '', 'error', 'warn'
+  }
+
+  /* ---- Clear ---- */
   function clearAll() {
     document.getElementById('jsInput').value = '';
+    document.getElementById('urlInput').value = '';
     document.getElementById('results').style.display = 'none';
     document.getElementById('fontList').innerHTML = '';
     document.getElementById('debugPanel').style.display = 'none';
@@ -311,20 +422,14 @@
     rawFontEntries = [];
   }
 
+  /* ---- Debug ---- */
   function toggleDebug() {
     const panel = document.getElementById('debugPanel');
-    if (panel.style.display === 'block') {
-      panel.style.display = 'none';
-      return;
-    }
-    if (!rawFontEntries.length) {
-      setStatus('Extract fonts first to see debug info.', true);
-      return;
-    }
+    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+    if (!rawFontEntries.length) { setStatus('Extract fonts first to see debug info.', 'error'); return; }
     const out = document.getElementById('debugOutput');
-    const sample = rawFontEntries[0];
-    let text = '=== FIRST RAW FONT ENTRY (top-level keys) ===\n';
-    text += JSON.stringify(sample, null, 2).slice(0, 3000);
+    let text = '=== FIRST RAW FONT ENTRY ===\n';
+    text += JSON.stringify(rawFontEntries[0], null, 2).slice(0, 3000);
     if (rawFontEntries.length > 1) {
       text += '\n\n=== SECOND RAW FONT ENTRY ===\n';
       text += JSON.stringify(rawFontEntries[1], null, 2).slice(0, 2000);
@@ -333,7 +438,208 @@
     panel.style.display = 'block';
   }
 
-  /* ---- Safely get a string from an object field ---- */
+  /* ================================================
+     FETCH FROM URL
+     ================================================ */
+
+  // List of CORS proxies to try in order
+  const PROXIES = [
+    url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+  ];
+
+  async function tryFetch(url) {
+    for (let i = 0; i < PROXIES.length; i++) {
+      const proxyUrl = PROXIES[i](url);
+      try {
+        setStatus(`Trying proxy ${i + 1}/${PROXIES.length}…`);
+        const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(15000) });
+        if (!res.ok) continue;
+        const text = await res.text();
+        // allorigins returns JSON {contents: "..."}
+        if (text.trimStart().startsWith('{')) {
+          try {
+            const j = JSON.parse(text);
+            if (j.contents) return j.contents;
+          } catch (_) {}
+        }
+        return text;
+      } catch (_) { /* try next proxy */ }
+    }
+    return null;
+  }
+
+  async function extractFromUrl() {
+    const rawUrl = document.getElementById('urlInput').value.trim();
+    if (!rawUrl) { setStatus('Please enter a Canva URL.', 'error'); return; }
+
+    // Normalize URL
+    let targetUrl = rawUrl;
+    if (!targetUrl.startsWith('http')) targetUrl = 'https://' + targetUrl;
+
+    setSpinner(true);
+    setStatus('Fetching page…');
+
+    let html;
+    try {
+      html = await tryFetch(targetUrl);
+    } catch (e) {
+      setSpinner(false);
+      setStatus('Network error: ' + e.message, 'error');
+      return;
+    }
+
+    setSpinner(false);
+
+    if (!html) {
+      setStatus(
+        'All CORS proxies failed. Try: open the Canva page → DevTools (F12) → Network tab → click the first document request → Response → copy the full HTML, paste into Paste JS tab.',
+        'error'
+      );
+      return;
+    }
+
+    // Check for login redirect
+    if (html.includes('login') && html.includes('redirect') && !html.includes("window['bootstrap']")) {
+      setStatus(
+        '⚠️ Canva redirected to login — this design requires authentication. Use a public view link, or copy the page source manually.',
+        'warn'
+      );
+      // Still try to parse in case there's partial data
+    }
+
+    // Extract the bootstrap script block from HTML
+    const bootstrapScript = extractBootstrapScript(html);
+    if (!bootstrapScript) {
+      setStatus(
+        'Could not find bootstrap data in page. The design may be private or the page structure changed. Try the Paste JS tab.',
+        'error'
+      );
+      return;
+    }
+
+    // Feed into the font extractor
+    processScript(bootstrapScript);
+  }
+
+  function extractBootstrapScript(html) {
+    // Strategy 1: Find <script> tags containing window['bootstrap']
+    const scriptRe = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+    let m;
+    while ((m = scriptRe.exec(html)) !== null) {
+      const content = m[1];
+      if (content && (content.includes("window['bootstrap']") || content.includes('window["bootstrap"]'))) {
+        return content;
+      }
+    }
+
+    // Strategy 2: Raw search for the assignment pattern (might span across tags in minified HTML)
+    const raw = html.match(/window\[['"]bootstrap['"]\]\s*=[\s\S]{0,50000}/);
+    if (raw) return raw[0];
+
+    return null;
+  }
+
+  /* ================================================
+     PARSE + EXTRACT
+     ================================================ */
+
+  function extractFromPaste() {
+    const raw = document.getElementById('jsInput').value;
+    if (!raw.trim()) { setStatus('Please paste some JavaScript or JSON first.', 'error'); return; }
+    processScript(raw);
+  }
+
+  function processScript(raw) {
+    setStatus('Parsing…');
+
+    let parsed;
+    try {
+      parsed = parseInput(raw);
+    } catch (e) {
+      setStatus('Parse error: ' + e.message, 'error');
+      return;
+    }
+
+    if (!parsed) {
+      setStatus('Could not parse the input. Make sure you pasted the full script.', 'error');
+      return;
+    }
+
+    rawFontEntries = collectFontArrays(parsed);
+    if (!rawFontEntries.length) {
+      setStatus('No font data found. Click 🔍 Debug Info to inspect the parsed object.', 'error');
+      return;
+    }
+
+    const normalized = rawFontEntries.map(normalizeFontEntry).filter(f => f.styles.length > 0);
+    const withFiles   = normalized.filter(f => f.styles.some(s => s.files.length > 0));
+
+    if (!withFiles.length) {
+      const totalStyles = normalized.reduce((n, f) => n + f.styles.length, 0);
+      setStatus(
+        `Found ${normalized.length} font entries with ${totalStyles} styles, but no downloadable file URLs detected. Click 🔍 Debug Info to inspect the raw structure.`,
+        'warn'
+      );
+      allFonts = normalized; // show anyway
+    } else {
+      const totalStyles = withFiles.reduce((n, f) => n + f.styles.length, 0);
+      setStatus(`✓ Found ${withFiles.length} font${withFiles.length !== 1 ? 's' : ''} with ${totalStyles} total styles.`);
+      allFonts = withFiles;
+    }
+
+    populateStyleFilter(allFonts);
+    document.getElementById('results').style.display = 'block';
+    document.getElementById('searchInput').value = '';
+    document.getElementById('formatFilter').value = '';
+    document.getElementById('styleFilter').value = '';
+    renderFonts(allFonts, '', '', '');
+  }
+
+  /* ---- Parse various input formats ---- */
+  function parseInput(raw) {
+    raw = raw.trim();
+
+    // 1. Pure JSON
+    try { return JSON.parse(raw); } catch (_) {}
+
+    // 2. window['bootstrap'] = JSON.parse('...')  (single or double quoted string arg)
+    const m1 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*JSON\.parse\((['"`])([\s\S]+?)\1\s*\)/);
+    if (m1) {
+      const inner = m1[2];
+      try { return JSON.parse(inner); } catch (_) {}
+      // Try unescaping single-quote escapes
+      try { return JSON.parse(inner.replace(/\\'/g, "'").replace(/\\\\/g, '\\')); } catch (_) {}
+    }
+
+    // 3. window['bootstrap'] = {...}
+    const m2 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*(\{[\s\S]+?\})(?:;|\s*window)/);
+    if (m2) {
+      try { return (0, eval)('(' + m2[1] + ')'); } catch (_) {}
+    }
+
+    // 4. Any large JSON.parse() call
+    const m3 = raw.match(/=\s*JSON\.parse\((['"`])([\s\S]{200,}?)\1\)/);
+    if (m3) {
+      try { return JSON.parse(m3[2]); } catch (_) {}
+    }
+
+    // 5. Eval the whole script sandboxed
+    try {
+      const sandbox = {};
+      const fn = new Function('window', raw + '\n return window;');
+      const result = fn(sandbox);
+      return result.bootstrap || result;
+    } catch (_) {}
+
+    return null;
+  }
+
+  /* ================================================
+     FONT COLLECTION & NORMALIZATION
+     ================================================ */
+
   function getString(obj, ...keys) {
     for (const k of keys) {
       const v = obj[k];
@@ -342,21 +648,10 @@
     return null;
   }
 
-  /* ---- Check if something looks like a font file object ---- */
   function isFileObj(f) {
     if (!f || typeof f !== 'object' || Array.isArray(f)) return false;
-    // Must have a URL-like string somewhere
     const url = getString(f, 'url', 'A', 'u', 'href', 'src');
     return url && (url.startsWith('http') || url.startsWith('//'));
-  }
-
-  /* ---- Normalize a single file object ---- */
-  function normalizeFile(f) {
-    const url     = getString(f, 'url', 'A', 'u', 'href', 'src') || '';
-    const format  = getString(f, 'format', 'B', 'f', 'type', 'fileFormat') || guessFormat(url);
-    const rawSize = f.sizeBytes ?? f.C ?? f.size ?? f.s ?? f.bytes ?? 0;
-    const sizeBytes = typeof rawSize === 'number' ? rawSize : 0;
-    return { url, format: format.toUpperCase(), sizeBytes };
   }
 
   function guessFormat(url) {
@@ -369,12 +664,17 @@
     return 'OTF';
   }
 
-  /* ---- Collect all file objects from a style entry ---- */
+  function normalizeFile(f) {
+    const url      = getString(f, 'url', 'A', 'u', 'href', 'src') || '';
+    const format   = (getString(f, 'format', 'B', 'f', 'type', 'fileFormat') || guessFormat(url)).toUpperCase();
+    const rawSize  = f.sizeBytes ?? f.C ?? f.size ?? f.s ?? f.bytes ?? 0;
+    const sizeBytes = typeof rawSize === 'number' ? rawSize : 0;
+    return { url, format, sizeBytes };
+  }
+
   function collectFiles(s) {
     const files = [];
-    // Try all array-valued properties that might hold file objects
-    const arrKeys = ['files', 'subsettedFiles', 'B', 'C', 'D', 'fontFiles', 'downloads', 'variants'];
-    for (const key of arrKeys) {
+    for (const key of ['files', 'subsettedFiles', 'B', 'C', 'D', 'fontFiles', 'downloads', 'variants']) {
       const val = s[key];
       if (Array.isArray(val)) {
         for (const f of val) {
@@ -382,49 +682,29 @@
         }
       }
     }
-    // If no arrays found, maybe the style entry itself is a file (rare)
-    if (files.length === 0 && isFileObj(s)) {
-      files.push(normalizeFile(s));
-    }
+    if (files.length === 0 && isFileObj(s)) files.push(normalizeFile(s));
     return files;
   }
 
-  /* ---- Check if an object looks like a font entry ---- */
   function isFontEntry(obj) {
     if (!obj || typeof obj !== 'object' || Array.isArray(obj)) return false;
-
-    // Must have a string name
     const name = getString(obj, 'C', 'name', 'B', 'fontName', 'familyName', 'family');
     if (!name || name.length > 300) return false;
-
-    // Must have a non-empty array for styles
     const stylesArr = obj.D || obj.styles;
     if (!Array.isArray(stylesArr) || stylesArr.length === 0) return false;
-
-    // At least the first element of styles must be an object
     if (!stylesArr[0] || typeof stylesArr[0] !== 'object') return false;
-
     return true;
   }
 
-  /* ---- Normalize a font entry into a standard shape ---- */
   function normalizeFontEntry(raw) {
-    // Name: try common string keys
     const name = getString(raw, 'C', 'name', 'B', 'fontName', 'familyName', 'family') || '(Unknown)';
     const id   = getString(raw, 'A', 'id', 'fontId', 'familyId') || '';
-
     const rawStyles = raw.D || raw.styles || [];
 
     const styles = rawStyles.map(s => {
       if (!s || typeof s !== 'object') return null;
-
-      // Style name: try common string keys
       const styleName = getString(s, 'style', 'name', 'A', 'B', 'type', 'weight', 'variant') || 'Regular';
-
-      // Collect file objects
-      const rawFiles = collectFiles(s);
-
-      // Deduplicate by url+format
+      const rawFiles  = collectFiles(s);
       const seen = new Set();
       const deduped = [];
       for (const f of rawFiles) {
@@ -432,120 +712,56 @@
         const key = f.url + '|' + f.format;
         if (!seen.has(key)) { seen.add(key); deduped.push(f); }
       }
-
       return { styleName, files: deduped };
     }).filter(Boolean);
 
     return { id, name, styles };
   }
 
-  /* ---- Deep scan for font-like entries ---- */
   function deepScan(node, out, depth) {
     if (depth > 8 || !node || typeof node !== 'object') return;
     if (Array.isArray(node)) {
       for (const item of node) {
-        if (isFontEntry(item)) { out.push(item); }
-        else { deepScan(item, out, depth + 1); }
+        if (isFontEntry(item)) out.push(item);
+        else deepScan(item, out, depth + 1);
       }
     } else {
       for (const key of Object.keys(node)) {
         const val = node[key];
-        if (isFontEntry(val)) { out.push(val); }
-        else if (typeof val === 'object') { deepScan(val, out, depth + 1); }
+        if (isFontEntry(val)) out.push(val);
+        else if (typeof val === 'object') deepScan(val, out, depth + 1);
       }
     }
   }
 
-  /* ---- Collect font arrays from parsed object ---- */
   function collectFontArrays(obj) {
-    const fonts = [];
-    if (!obj || typeof obj !== 'object') return fonts;
-
+    if (!obj || typeof obj !== 'object') return [];
     const candidates = [];
 
-    // Try common paths in Canva bootstrap
-    const paths = [
-      obj?.page?.C,
-      obj?.page?.G,
-      obj?.page?.CX,
-      obj?.page?.r ? [obj.page.r] : null,
-      obj?.page?.CY ? [obj.page.CY] : null,
-    ];
-    for (const p of paths) {
+    // Known Canva paths
+    for (const p of [obj?.page?.C, obj?.page?.G, obj?.page?.CX,
+                     obj?.page?.r ? [obj.page.r] : null,
+                     obj?.page?.CY ? [obj.page.CY] : null]) {
       if (Array.isArray(p)) candidates.push(...p);
     }
 
-    // Fallback: if obj itself is an array of font-like objects
-    if (candidates.length === 0 && Array.isArray(obj)) {
-      candidates.push(...obj);
-    }
+    if (candidates.length === 0 && Array.isArray(obj)) candidates.push(...obj);
+    if (candidates.length === 0) deepScan(obj, candidates, 0);
 
-    // Also do a deep scan for anything shaped like a font entry
-    if (candidates.length === 0) {
-      deepScan(obj, candidates, 0);
-    }
-
-    // Deduplicate by font ID or stringified name
     const seen = new Set();
-    for (const f of candidates) {
-      if (isFontEntry(f)) {
-        const id = getString(f, 'A', 'id', 'fontId') || getString(f, 'C', 'name') || JSON.stringify(f).slice(0, 40);
-        if (!seen.has(id)) {
-          seen.add(id);
-          fonts.push(f);
-        }
-      }
-    }
-    return fonts;
+    return candidates.filter(f => {
+      if (!isFontEntry(f)) return false;
+      const id = getString(f, 'A', 'id') || getString(f, 'C', 'name') || JSON.stringify(f).slice(0, 40);
+      if (seen.has(id)) return false;
+      seen.add(id); return true;
+    });
   }
 
-  /* ---- Parse the pasted code ---- */
-  function parseInput(raw) {
-    raw = raw.trim();
+  /* ================================================
+     RENDER
+     ================================================ */
 
-    // Try pure JSON first
-    try { return JSON.parse(raw); } catch (_) {}
-
-    // Try extracting JSON from window['bootstrap'] = JSON.parse('...')
-    // Handle both single and escaped quotes
-    const m1 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*JSON\.parse\((['"`])([\s\S]+?)\1\)/);
-    if (m1) {
-      const inner = m1[2].replace(/\\'/g, "'").replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-      try { return JSON.parse(inner); } catch (_) {}
-      try { return JSON.parse(m1[2]); } catch (_) {}
-    }
-
-    // Try window['bootstrap'] = {...}
-    const m2 = raw.match(/window\[['"]bootstrap['"]\]\s*=\s*(\{[\s\S]+?\})(?:;|$)/);
-    if (m2) {
-      try { return (0, eval)('(' + m2[1] + ')'); } catch (_) {}
-    }
-
-    // Try extracting any large JSON.parse() call
-    const m3 = raw.match(/=\s*JSON\.parse\('([\s\S]{200,})'\)/);
-    if (m3) {
-      try { return JSON.parse(m3[1]); } catch (_) {}
-    }
-
-    // Try eval the whole script in a sandboxed way
-    try {
-      const sandbox = {};
-      const fn = new Function('window', raw + '\n return window;');
-      const result = fn(sandbox);
-      return result.bootstrap || result;
-    } catch (_) {}
-
-    return null;
-  }
-
-  /* ---- Render ---- */
   const FORMAT_PRIORITY = ['OTF', 'TTF', 'WOFF2', 'WOFF', 'OTF_CFF'];
-
-  function formatLabel(fmt) {
-    if (!fmt) return 'DL';
-    if (fmt === 'OTF' || fmt === 'OTF_CFF' || fmt === 'TTF') return fmt;
-    return fmt;
-  }
 
   function isPrivateUrl(url) {
     return url && (url.includes('csig=') || url.includes('signer=') || url.includes('token='));
@@ -557,51 +773,48 @@
     return Math.round(bytes / 1024) + ' KB';
   }
 
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function escAttr(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
   function buildStyleRows(styles, fmtFilter, styleFilter) {
     let rows = '';
     for (const s of styles) {
-      // Style filter match (flexible)
       if (styleFilter) {
-        const sn = s.styleName.toUpperCase().replace(/[\s_-]/g, '');
+        const sn = String(s.styleName).toUpperCase().replace(/[\s_-]/g, '');
         const sf = styleFilter.toUpperCase().replace(/[\s_-]/g, '');
         if (sn !== sf) continue;
       }
-
       if (!s.files || s.files.length === 0) continue;
 
-      // Group files by format
       const byFmt = {};
       for (const f of s.files) {
-        const key = f.format || 'UNKNOWN';
-        if (!byFmt[key]) byFmt[key] = [];
-        byFmt[key].push(f);
+        const k = f.format || 'UNKNOWN';
+        (byFmt[k] = byFmt[k] || []).push(f);
       }
 
       let links = '';
-      const allFmts = [...new Set([...FORMAT_PRIORITY, ...Object.keys(byFmt)])];
-      for (const fmt of allFmts) {
+      for (const fmt of [...new Set([...FORMAT_PRIORITY, ...Object.keys(byFmt)])]) {
         if (!byFmt[fmt]) continue;
-        // Format filter
         if (fmtFilter) {
-          if (fmtFilter === 'OTF' && !['OTF', 'TTF', 'OTF_CFF'].includes(fmt)) continue;
+          if (fmtFilter === 'OTF' && !['OTF','TTF','OTF_CFF'].includes(fmt)) continue;
           if (fmtFilter !== 'OTF' && fmt !== fmtFilter) continue;
         }
-
-        const f = byFmt[fmt][0];
+        const f    = byFmt[fmt][0];
         const priv = isPrivateUrl(f.url);
-        const cls = priv ? 'private' : (['WOFF2'].includes(fmt) ? 'woff2' : fmt === 'WOFF' ? 'woff' : 'ttf');
-        const label = formatLabel(fmt);
+        const cls  = priv ? 'private' : (fmt === 'WOFF2' ? 'woff2' : fmt === 'WOFF' ? 'woff' : 'ttf');
         const sizeStr = fmtSize(f.sizeBytes);
-
         if (priv) {
-          links += `<span class="dl-link ${cls}" title="Signed/private URL — may expire">${label} 🔒</span>`;
-          links += `<span class="dl-link copy-btn" onclick="copyUrl(this)" data-url="${escAttr(f.url)}" title="Copy URL">Copy URL</span>`;
+          links += `<span class="dl-link ${cls}" title="Signed URL — may expire">${escHtml(fmt)} 🔒</span>`;
+          links += `<span class="dl-link copy-btn" onclick="copyUrl(this)" data-url="${escAttr(f.url)}">Copy URL</span>`;
         } else {
-          links += `<a class="dl-link ${cls}" href="${escAttr(f.url)}" download target="_blank" rel="noopener">${label}${sizeStr ? `<span class="size-info">${sizeStr}</span>` : ''}</a>`;
+          links += `<a class="dl-link ${cls}" href="${escAttr(f.url)}" download target="_blank" rel="noopener">${escHtml(fmt)}${sizeStr ? `<span class="size-info">${sizeStr}</span>` : ''}</a>`;
         }
         delete byFmt[fmt];
       }
-
       if (!links) continue;
 
       const displayStyle = String(s.styleName).replace(/[_-]/g, ' ').toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -613,29 +826,16 @@
     return rows;
   }
 
-  function escHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
-  function escAttr(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
-  }
-
   function renderFonts(fonts, fmtFilter, styleFilter, searchQuery) {
     const list = document.getElementById('fontList');
     const noResults = document.getElementById('no-results');
-    const summary = document.getElementById('summary');
-    list.innerHTML = '';
-    let shown = 0;
-
+    const summary   = document.getElementById('summary');
+    list.innerHTML = ''; let shown = 0;
     for (const font of fonts) {
       if (searchQuery && !font.name.toLowerCase().includes(searchQuery.toLowerCase())) continue;
-
       const rows = buildStyleRows(font.styles, fmtFilter, styleFilter);
       if (!rows) continue;
-
       shown++;
-      const styleCount = font.styles.length;
       const card = document.createElement('div');
       card.className = 'font-card';
       card.innerHTML = `
@@ -645,34 +845,29 @@
             <div class="font-id">${escHtml(font.id)}</div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
-            <span class="font-badge">${styleCount} style${styleCount !== 1 ? 's' : ''}</span>
+            <span class="font-badge">${font.styles.length} style${font.styles.length !== 1 ? 's' : ''}</span>
             <span class="chevron">&#9662;</span>
           </div>
         </div>
         <div class="style-list">${rows}</div>`;
       list.appendChild(card);
     }
-
     noResults.style.display = shown === 0 ? 'block' : 'none';
     summary.textContent = `Showing ${shown} of ${fonts.length} font${fonts.length !== 1 ? 's' : ''}`;
   }
 
-  function toggleCard(header) {
-    header.closest('.font-card').classList.toggle('open');
-  }
+  function toggleCard(header) { header.closest('.font-card').classList.toggle('open'); }
 
   function filterFonts() {
-    const search = document.getElementById('searchInput').value;
-    const fmt    = document.getElementById('formatFilter').value;
-    const style  = document.getElementById('styleFilter').value;
-    renderFonts(allFonts, fmt, style, search);
+    renderFonts(allFonts,
+      document.getElementById('formatFilter').value,
+      document.getElementById('styleFilter').value,
+      document.getElementById('searchInput').value);
   }
 
   function populateStyleFilter(fonts) {
     const styles = new Set();
-    for (const f of fonts) {
-      for (const s of f.styles) styles.add(s.styleName);
-    }
+    for (const f of fonts) for (const s of f.styles) styles.add(s.styleName);
     const sel = document.getElementById('styleFilter');
     sel.innerHTML = '<option value="">All styles</option>';
     for (const s of [...styles].sort()) {
@@ -683,56 +878,16 @@
     }
   }
 
-  /* ---- Main entry ---- */
-  function extractFonts() {
-    const raw = document.getElementById('jsInput').value;
-    if (!raw.trim()) { setStatus('Please paste some JavaScript or JSON first.', true); return; }
-
-    setStatus('Parsing…');
-
-    let parsed;
-    try {
-      parsed = parseInput(raw);
-    } catch (e) {
-      setStatus('Parse error: ' + e.message, true);
-      return;
-    }
-
-    if (!parsed) { setStatus('Could not parse the input. Make sure you pasted the full script.', true); return; }
-
-    rawFontEntries = collectFontArrays(parsed);
-    if (!rawFontEntries.length) { setStatus('No font data found in the parsed object. Try the Debug Info button to inspect structure.', true); return; }
-
-    allFonts = rawFontEntries.map(normalizeFontEntry).filter(f => f.styles.length > 0);
-
-    const fontsWithFiles = allFonts.filter(f => f.styles.some(s => s.files.length > 0));
-
-    if (!fontsWithFiles.length) {
-      const totalStyles = allFonts.reduce((n, f) => n + f.styles.length, 0);
-      setStatus(`Found ${allFonts.length} font entries and ${totalStyles} styles, but no downloadable file URLs detected. Click Debug Info to inspect raw structure.`, true);
-    } else {
-      const totalStyles = fontsWithFiles.reduce((n, f) => n + f.styles.length, 0);
-      setStatus(`✓ Found ${fontsWithFiles.length} font${fontsWithFiles.length !== 1 ? 's' : ''} with ${totalStyles} total styles.`);
-    }
-
-    allFonts = fontsWithFiles.length > 0 ? fontsWithFiles : allFonts;
-
-    populateStyleFilter(allFonts);
-    document.getElementById('results').style.display = 'block';
-    document.getElementById('searchInput').value = '';
-    document.getElementById('formatFilter').value = '';
-    document.getElementById('styleFilter').value = '';
-    renderFonts(allFonts, '', '', '');
-  }
-
-  /* ---- Copy URL helper ---- */
   function copyUrl(btn) {
-    const url = btn.getAttribute('data-url');
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(btn.getAttribute('data-url')).then(() => {
       const t = document.getElementById('toast');
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 1800);
     });
+  }
+
+  function setSpinner(on) {
+    document.getElementById('spinner').classList.toggle('active', on);
   }
 </script>
 </body>
